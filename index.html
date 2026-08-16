@@ -1388,7 +1388,7 @@
   
 		        <i class="fas fa-video"></i><span>相簿视频</span>
   
-		        <input type="file" id="videoFileInput" accept="video/*,video/mp4,video/quicktime" style="display: none;">
+		        <input type="file" id="videoFileInput" accept="video/*" style="display: none;">
 		    </div>
                     <div class="settings-item" id="decision-function">
                         <i class="fas fa-balance-scale"></i> 
@@ -2246,7 +2246,7 @@
     <script src="js/onboarding.js"></script> 
     <script src="js/listeners.js"></script>
     <script src="js/app.js"></script>
-<!-- 相簿影片播放處理腳本 -->
+<!-- 相簿影片發送至聊天框腳本 -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const videoInput = document.getElementById('videoFileInput');
@@ -2254,28 +2254,29 @@
       videoInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
-          // 建立影片臨時讀取網址
           const videoUrl = URL.createObjectURL(file);
           
-          // 建立全螢幕播放彈窗
-          const modal = document.createElement('div');
-          modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.9);z-index:99999;display:flex;flex-direction:column;justify-content:center;align-items:center;';
-          
-          modal.innerHTML = `
-            <div style="position:relative;width:90%;max-width:800px;text-align:right;">
-              <button id="closeVideoBtn" style="background:#ff4d4f;color:#fff;border:none;padding:8px 16px;font-size:16px;border-radius:6px;cursor:pointer;margin-bottom:10px;">✕ 关闭视频</button>
-            </div>
-            <video src="${videoUrl}" controls autoplay style="max-width:90%;max-height:80vh;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);"></video>
-          `;
-          
-          document.body.appendChild(modal);
+          // 1. 自動關閉高級功能選單 (如果有的話)
+          const advancedModal = document.getElementById('advanced-modal');
+          if (advancedModal) hideModal(advancedModal);
 
-          // 點擊關閉按鈕時移除彈窗並釋放記憶體
-          document.getElementById('closeVideoBtn').onclick = function() {
-            URL.revokeObjectURL(videoUrl);
-            modal.remove();
-            videoInput.value = ''; // 清空選擇，以便下次重複選擇同個影片
-          };
+          // 2. 建立聊天框內的影片 HTML
+          const videoHtml = <video src="${videoUrl}" controls style="max-width: 100%; border-radius: 8px; margin: 5px 0;"></video>;
+
+          // 3. 尋找訊息輸入框或直接發送至對話區
+          // 備註：這會尋找頁面上的聊天內容容器 (請依據你的項目容器 ID 調整，如 #chat-messages 或 .message-container)
+          const chatContainer = document.querySelector('.chat-messages') || document.querySelector('.messages') || document.body;
+          
+          const msgDiv = document.createElement('div');
+          msgDiv.className = 'message user-message'; // 模擬使用者發送的訊息樣式
+          msgDiv.style.cssText = 'text-align: right; margin: 10px;';
+          msgDiv.innerHTML = videoHtml;
+          
+          chatContainer.appendChild(msgDiv);
+          chatContainer.scrollTop = chatContainer.scrollHeight; // 自動捲動到底部
+
+          // 清空 input 讓下次可重複選擇
+          videoInput.value = '';
         }
       });
     }
