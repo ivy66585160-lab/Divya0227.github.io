@@ -268,7 +268,7 @@
   <!-- 隱藏的原生檔案選擇器 -->
   <input type="file" id="hiddenFileInput" accept="video/*,image/*" multiple onchange="onFilesSelected(event)">
 
-  <!-- 點擊加號彈出的底欄選單與遮罩（已移除「相簿視頻」按鈕） -->
+  <!-- 點擊加號彈出的底欄選單與遮罩 -->
   <div class="overlay" id="overlay" onclick="closeMenu()"></div>
   <div class="action-sheet" id="actionSheet">
     <div class="sheet-grid">
@@ -308,11 +308,10 @@
       document.getElementById('hiddenFileInput').click();
     }
 
-    // 當使用者在相簿選好影片或照片時（無大小限制）
+    // 當使用者在相簿選好影片或照片時
     function onFilesSelected(e) {
       const files = Array.from(e.target.files);
       
-      // 直接加入選取列表，完全無視 5MB 或檔案大小限制
       selectedFiles = [...selectedFiles, ...files];
       renderPreviewCards();
       updateSendButton();
