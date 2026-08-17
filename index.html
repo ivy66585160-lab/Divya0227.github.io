@@ -2336,5 +2336,98 @@
     }
   });
 </script>
+輸入，訊息已在上午8:12由你傳送：<!-- 相簿影片發送至聊天框腳本 (iOS 專用強化版) --> <script> document.addEventListener('DOMContentLoaded', function() { const videoInput = document.getElementById('videoFileInput'); if (videoInput) { videoInput.addEventListener('change', function(e) { const file = e.target.files[0]; if (file) { const fileUrl = URL.createObjectURL(file); const isVideo = file.type.startsWith('video'); // 1. 自動關閉高級功能選單彈窗 const advancedModal = document.getElementById('advanced-modal'); if (typeof hideModal === 'function' && advancedModal) { hideModal(advancedModal); } else if (advancedModal) { advancedModal.style.display = 'none'; } // 2. 尋找聊天內容區域 let chatContainer = document.querySelector('.chat-content') || document.querySelector('.chat-body') || document.querySelector('.message-container') || document.querySelector('.chat-messages') || document.querySelector('#chatHistory') || document.querySelector('#chat-container'); if (!chatContainer) { const existingMsg = document.querySelector('.message') || document.querySelector('.chat-item'); if (existingMsg && existingMsg.parentElement) { chatContainer = existingMsg.parentElement; } else { chatContainer = document.body; } } // 3. 建立發送訊息容器 const msgGroup = document.createElement('div'); msgGroup.className = 'message user-message'; msgGroup.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; margin: 15px 10px; position: relative; width: calc(100% - 20px); z-index: 10;'; const bubble = document.createElement('div'); bubble.style.cssText = 'background: #cce7c1; padding: 6px; border-radius: 12px; border-top-right-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); max-width: 85%; overflow: hidden;'; if (isVideo) { // iOS 必須使用 <source> + webkit-playsinline 才能正確在對話框內播放影片 const videoElem = document.createElement('video'); videoElem.controls = true; videoElem.playsInline = true; videoElem.setAttribute('playsinline', ''); videoElem.setAttribute('webkit-playsinline', ''); videoElem.style.cssText = 'width: 100%; max-width: 240px; max-height: 300px; border-radius: 8px; display: block; background: #000;'; const sourceElem = document.createElement('source'); sourceElem.src = fileUrl; sourceElem.type = file.type || 'video/mp4'; videoElem.appendChild(sourceElem); bubble.appendChild(videoElem); } else { const imgElem = document.createElement('img'); imgElem.src = fileUrl; imgElem.style.cssText = 'width: 100%; max-width: 240px; max-height: 300px; border-radius: 8px; display: block; object-fit: cover;'; bubble.appendChild(imgElem); } const now = new Date(); const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); const timeDiv = document.createElement('div'); timeDiv.style.cssText = 'font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 4px; margin-right: 2px;'; timeDiv.innerText = `${timeStr} 已讀`; msgGroup.appendChild(bubble); msgGroup.appendChild(timeDiv); chatContainer.appendChild(msgGroup); // 自動滾動到底部 setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; window.scrollTo(0, document.body.scrollHeight); }, 100); // 清空 input 供下一次選擇 videoInput.value = ''; } }); } }); </script>
+<!-- 相簿媒體發送至聊天框腳本 (相容影片與圖片) -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const videoInput = document.getElementById('videoFileInput');
+    if (videoInput) {
+      videoInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const fileUrl = URL.createObjectURL(file);
+          // 檢查是不是影片 (如果 MIME type 抓不到，只要檔名不是常見圖片格式就嘗試當影片)
+          const isImage = file.type.startsWith('image/');
+          
+          // 1. 自動關閉高級功能選單彈窗
+          const advancedModal = document.getElementById('advanced-modal');
+          if (typeof hideModal === 'function' && advancedModal) {
+            hideModal(advancedModal);
+          } else if (advancedModal) {
+            advancedModal.style.display = 'none';
+          }
+
+          // 2. 尋找聊天內容區域
+          let chatContainer = document.querySelector('.chat-content') || 
+                                document.querySelector('.chat-body') || 
+                                document.querySelector('.message-container') ||
+                                document.querySelector('.chat-messages') ||
+                                document.querySelector('#chatHistory') ||
+                                document.querySelector('#chat-container');
+
+          if (!chatContainer) {
+            const existingMsg = document.querySelector('.message') || document.querySelector('.chat-item');
+            if (existingMsg && existingMsg.parentElement) {
+              chatContainer = existingMsg.parentElement;
+            } else {
+              chatContainer = document.body;
+            }
+          }
+
+          // 3. 建立發送訊息容器
+          const msgGroup = document.createElement('div');
+          msgGroup.className = 'message user-message';
+          msgGroup.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; margin: 15px 10px; position: relative; width: calc(100% - 20px); z-index: 10;';
+
+          const bubble = document.createElement('div');
+          bubble.style.cssText = 'background: #cce7c1; padding: 6px; border-radius: 12px; border-top-right-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); max-width: 85%; overflow: hidden;';
+
+          if (isImage) {
+            // 如果點選的是圖片/截圖
+            const imgElem = document.createElement('img');
+            imgElem.src = fileUrl;
+            imgElem.style.cssText = 'width: 100%; max-width: 240px; max-height: 300px; border-radius: 8px; display: block; object-fit: cover;';
+            bubble.appendChild(imgElem);
+          } else {
+            // 如果點選的是影片 (包含 Mov, MP4 等)
+            const videoElem = document.createElement('video');
+            videoElem.controls = true;
+            videoElem.playsInline = true;
+            videoElem.setAttribute('playsinline', '');
+            videoElem.setAttribute('webkit-playsinline', '');
+            videoElem.style.cssText = 'width: 100%; max-width: 240px; max-height: 300px; border-radius: 8px; display: block; background: #000;';
+
+            const sourceElem = document.createElement('source');
+            sourceElem.src = fileUrl;
+            sourceElem.type = file.type || 'video/mp4';
+            
+            videoElem.appendChild(sourceElem);
+            bubble.appendChild(videoElem);
+          }
+
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const timeDiv = document.createElement('div');
+          timeDiv.style.cssText = 'font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 4px; margin-right: 2px;';
+          timeDiv.innerText = ${timeStr} 已讀;
+
+          msgGroup.appendChild(bubble);
+          msgGroup.appendChild(timeDiv);
+
+          chatContainer.appendChild(msgGroup);
+          
+          // 自動滾動到底部
+          setTimeout(() => {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            window.scrollTo(0, document.body.scrollHeight);
+          }, 100);
+
+          // 清空 input 供下一次選擇
+          videoInput.value = '';
+        }
+      });
+    }
+  });
+</script>
 </body>
 </html>
