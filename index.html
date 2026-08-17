@@ -2258,125 +2258,98 @@
     <script src="js/listeners.js"></script>
     <script src="js/app.js"></script>
 <script>
-(function initVideoInjector() {
-  let pendingFile = null;
-  let pendingFileUrl = null;
+(function hackImageModalForVideo() {
+  function setupModalHack() {
+    // 1. 抓取「发送图片」彈窗內的檔案輸入框
+    // 監聽全局 click，當使用者開啟「发送图片」彈窗時動態鎖定
+    document.body.addEventListener('click', function(e) {
+      setTimeout(() => {
+        // 搜尋彈窗內的 file input
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        fileInputs.forEach(input => {
+          // 強制解除圖片限制，允許影片 (image/*,video/*)
+          if (input.getAttribute('accept') !== 'image/*,video/*') {
+            input.setAttribute('accept', 'image/*,video/*');
+          }
+        });
+      }, 300);
+    }, true);
 
-  function setup() {
-    // 1. 建立獨立的影片/圖片 Input
-    let globalInput = document.getElementById('globalMediaInput');
-    if (!globalInput) {
-      globalInput = document.createElement('input');
-      globalInput.id = 'globalMediaInput';
-      globalInput.type = 'file';
-      globalInput.accept = 'video/*,image/*'; // 允許選擇影片與圖片
-      globalInput.style.display = 'none';
-      document.body.appendChild(globalInput);
+    // 2. 監聽聊天室新增的訊息氣泡，如果是影片就替換為 <video> 播放器
+    const chatContainer = document.querySelector('.chat-content') || 
+                          document.querySelector('.chat-body') || 
+                          document.querySelector('#chatHistory') || 
+                          document.body;
+
+    if (chatContainer) {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) { // Element node
+              // 檢查訊息內是否有 <img> 標籤傳的是影片檔，或是需要轉為影片的元素
+              const imgs = node.querySelectorAll ? node.querySelectorAll('img') : [];
+              imgs.forEach(img => {
+                const src = img.src || '';
+                // 判斷是否為影片副檔名或 blob 影片
+                if (/\.(mp4|mov|webm|m4v)$/i.test(src) || img.dataset.isVideo === 'true') {
+                  replaceImgWithVideo(img, src);
+                }
+              });
+            }
+          });
+        });
+      });
+
+      observer.observe(chatContainer, { childList: true, subtree: true });
     }
 
-    // 2. 當選取影片或圖片後，直接發送到聊天室
-    globalInput.onchange = function(e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
+    // 將原本顯示失敗的 img 替換成可播放的 video 標籤
+    function replaceImgWithVideo(imgElem, videoSrc) {
+      const video = document.createElement('video');
+      video.src = videoSrc;
+      video.controls = true;
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.style.cssText = imgElem.style.cssText || 'width: 100%; max-width: 240px; border-radius: 8px; display: block;';
+      if (!video.style.maxWidth) video.style.maxWidth = '240px';
 
-      pendingFile = file;
-      if (pendingFileUrl) URL.revokeObjectURL(pendingFileUrl);
-      pendingFileUrl = URL.createObjectURL(file);
+      imgElem.parentNode.replaceChild(video, imgElem);
+    }
 
-      // 選完檔案直接執行發送！
-      sendMediaToChat();
-
-      // 清空 input 避免重複選同一張無反應
-      globalInput.value = '';
-    };
-
-    // 3. 🌟 關鍵：攔截「相簿視頻」按鈕點擊事件
+    // 3. 劫持「相簿視頻」按鈕，讓它直接觸發「发送图片」功能
     document.body.addEventListener('click', function(e) {
       const target = e.target.closest('*');
       if (!target) return;
-
       const text = (target.innerText || target.textContent || '').trim();
-      
-      // 如果點到的是「相簿視頻」或原本無用的上傳點
+
       if (text.includes('相簿視頻') || text.includes('相册视频')) {
         e.preventDefault();
         e.stopPropagation();
-        e.stopImmediatePropagation();
 
-        // 關閉可能彈出的原生設置視窗
-        const modals = document.querySelectorAll('.modal, [id*="modal"], [class*="modal"], [class*="overlay"]');
-        modals.forEach(m => {
-          m.style.display = 'none';
-          m.classList.remove('show', 'active');
+        // 找到「发送图片」按鈕並點擊它
+        const sendImgBtn = Array.from(document.querySelectorAll('*')).find(el => {
+          const t = (el.innerText || el.textContent || '').trim();
+          return t === '发送图片' || t === '發送圖片';
         });
 
-        // 觸發我們自己的檔案選擇器
-        globalInput.click();
+        if (sendImgBtn) {
+          sendImgBtn.click();
+        } else {
+          // 若找不到按鈕，嘗試觸發第一個 input file
+          const firstInput = document.querySelector('input[type="file"]');
+          if (firstInput) {
+            firstInput.setAttribute('accept', 'image/*,video/*');
+            firstInput.click();
+          }
+        }
       }
-    }, true); // 強制優先攔截
-
-    // 4. 將影片渲染成聊天室氣泡
-    function sendMediaToChat() {
-      if (!pendingFile || !pendingFileUrl) return;
-
-      // 搜尋聊天室內容容器
-      let chatContainer = document.querySelector('.chat-content') || 
-                          document.querySelector('.chat-body') || 
-                          document.querySelector('#chatHistory') || 
-                          document.querySelector('#chat-container') ||
-                          document.body;
-
-      const now = new Date();
-      const timeStr = ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')};
-
-      // 外層訊息包裝
-      const msgGroup = document.createElement('div');
-      msgGroup.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; margin: 12px 10px; box-sizing: border-box; clear: both; width: calc(100% - 20px);';
-
-      // 訊息氣泡
-      const bubble = document.createElement('div');
-      bubble.style.cssText = 'background: #95ec69; padding: 6px; border-radius: 12px; max-width: 80%; box-shadow: 0 1px 2px rgba(0,0,0,0.15); position: relative; overflow: hidden;';
-
-      const isImage = pendingFile.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(pendingFile.name);
-
-      if (isImage) {
-        const img = document.createElement('img');
-        img.src = pendingFileUrl;
-        img.style.cssText = 'width: 100%; max-width: 240px; border-radius: 8px; display: block;';
-        bubble.appendChild(img);
-      } else {
-        // 🎥 聊天室原生影片播放元件
-        const video = document.createElement('video');
-        video.src = pendingFileUrl;
-        video.controls = true; // 顯示播放/暫停鍵
-        video.setAttribute('playsinline', 'true');
-        video.setAttribute('webkit-playsinline', 'true');
-        video.style.cssText = 'width: 100%; max-width: 240px; max-height: 320px; border-radius: 8px; display: block; background: #000;';
-        bubble.appendChild(video);
-      }
-
-      // 時間標籤
-      const timeDiv = document.createElement('div');
-      timeDiv.style.cssText = 'font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 4px; text-align: right;';
-      timeDiv.innerText = ${timeStr} 已讀;
-
-      msgGroup.appendChild(bubble);
-      msgGroup.appendChild(timeDiv);
-
-      chatContainer.appendChild(msgGroup);
-
-      // 自動置底
-      setTimeout(() => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        window.scrollTo(0, document.body.scrollHeight);
-      }, 100);
-    }
+    }, true);
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setup);
+    document.addEventListener('DOMContentLoaded', setupModalHack);
   } else {
-    setup();
+    setupModalHack();
   }
 })();
 </script>
