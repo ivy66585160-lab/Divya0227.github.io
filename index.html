@@ -2256,24 +2256,55 @@
         if (file) {
           const videoUrl = URL.createObjectURL(file);
           
-          // 1. 自動關閉高級功能選單 (如果有的話)
+          // 1. 自動關閉高級功能選單彈窗
           const advancedModal = document.getElementById('advanced-modal');
-          if (advancedModal) hideModal(advancedModal);
+          if (typeof hideModal === 'function' && advancedModal) {
+            hideModal(advancedModal);
+          } else if (advancedModal) {
+            advancedModal.style.display = 'none';
+          }
 
-          // 2. 建立聊天框內的影片 HTML
-          const videoHtml = <video src="${videoUrl}" controls style="max-width: 100%; border-radius: 8px; margin: 5px 0;"></video>;
+          // 2. 尋找畫面中的主要聊天內容區域
+          let chatContainer = document.querySelector('.chat-content') || 
+                                document.querySelector('.chat-body') || 
+                                document.querySelector('.message-container') ||
+                                document.querySelector('.chat-messages') ||
+                                document.querySelector('#chatHistory') ||
+                                document.querySelector('#chat-container');
 
-          // 3. 尋找訊息輸入框或直接發送至對話區
-          // 備註：這會尋找頁面上的聊天內容容器 (請依據你的項目容器 ID 調整，如 #chat-messages 或 .message-container)
-          const chatContainer = document.querySelector('.chat-messages') || document.querySelector('.messages') || document.body;
+          // 如果找不到特定 Class，就搜尋畫面上已經存在的綠色訊息氣泡父容器
+          if (!chatContainer) {
+            const existingMsg = document.querySelector('.message') || document.querySelector('.chat-item');
+            if (existingMsg && existingMsg.parentElement) {
+              chatContainer = existingMsg.parentElement;
+            } else {
+              chatContainer = document.body;
+            }
+          }
+
+          // 3. 建立符合你 UI 風格的右側發送影片氣泡
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+          const msgGroup = document.createElement('div');
+          msgGroup.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; margin: 15px 10px; position: relative;';
+
+          msgGroup.innerHTML = `
+            <div style="display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; max-width: 85%;">
+              <div style="background: #cce7c1; padding: 6px; border-radius: 12px; border-top-right-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                <video src="${videoUrl}" controls playsinline style="max-width: 220px; max-height: 250px; border-radius: 8px; display: block; object-fit: cover;"></video>
+              </div>
+            </div>
+            <div style="font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 4px; margin-right: 2px;">${timeStr} 已讀</div>
+          `;
           
-          const msgDiv = document.createElement('div');
-          msgDiv.className = 'message user-message'; // 模擬使用者發送的訊息樣式
-          msgDiv.style.cssText = 'text-align: right; margin: 10px;';
-          msgDiv.innerHTML = videoHtml;
+          chatContainer.appendChild(msgGroup);
           
-          chatContainer.appendChild(msgDiv);
-          chatContainer.scrollTop = chatContainer.scrollHeight; // 自動捲動到底部
+          // 自動滾動到底部
+          setTimeout(() => {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            window.scrollTo(0, document.body.scrollHeight);
+          }, 100);
 
           // 清空 input 讓下次可重複選擇
           videoInput.value = '';
