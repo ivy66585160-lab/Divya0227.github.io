@@ -2246,7 +2246,7 @@
     <script src="js/onboarding.js"></script> 
     <script src="js/listeners.js"></script>
     <script src="js/app.js"></script>
-<!-- 相簿影片發送至聊天框腳本 -->
+<!-- 相簿影片發送至聊天框腳本 (iOS 專用強化版) -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const videoInput = document.getElementById('videoFileInput');
@@ -2254,7 +2254,8 @@
       videoInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
-          const videoUrl = URL.createObjectURL(file);
+          const fileUrl = URL.createObjectURL(file);
+          const isVideo = file.type.startsWith('video');
           
           // 1. 自動關閉高級功能選單彈窗
           const advancedModal = document.getElementById('advanced-modal');
@@ -2264,7 +2265,7 @@
             advancedModal.style.display = 'none';
           }
 
-          // 2. 尋找畫面中的主要聊天內容區域
+          // 2. 尋找聊天內容區域
           let chatContainer = document.querySelector('.chat-content') || 
                                 document.querySelector('.chat-body') || 
                                 document.querySelector('.message-container') ||
@@ -2272,7 +2273,6 @@
                                 document.querySelector('#chatHistory') ||
                                 document.querySelector('#chat-container');
 
-          // 如果找不到特定 Class，就搜尋畫面上已經存在的綠色訊息氣泡父容器
           if (!chatContainer) {
             const existingMsg = document.querySelector('.message') || document.querySelector('.chat-item');
             if (existingMsg && existingMsg.parentElement) {
@@ -2282,22 +2282,45 @@
             }
           }
 
-          // 3. 建立符合你 UI 風格的右側發送影片氣泡
+          // 3. 建立發送訊息容器
+          const msgGroup = document.createElement('div');
+          msgGroup.className = 'message user-message';
+          msgGroup.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; margin: 15px 10px; position: relative; width: calc(100% - 20px); z-index: 10;';
+
+          const bubble = document.createElement('div');
+          bubble.style.cssText = 'background: #cce7c1; padding: 6px; border-radius: 12px; border-top-right-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); max-width: 85%; overflow: hidden;';
+
+          if (isVideo) {
+            // iOS 必須使用 <source> + webkit-playsinline 才能正確在對話框內播放影片
+            const videoElem = document.createElement('video');
+            videoElem.controls = true;
+            videoElem.playsInline = true;
+            videoElem.setAttribute('playsinline', '');
+            videoElem.setAttribute('webkit-playsinline', '');
+            videoElem.style.cssText = 'width: 100%; max-width: 240px; max-height: 300px; border-radius: 8px; display: block; background: #000;';
+
+            const sourceElem = document.createElement('source');
+            sourceElem.src = fileUrl;
+            sourceElem.type = file.type || 'video/mp4';
+            
+            videoElem.appendChild(sourceElem);
+            bubble.appendChild(videoElem);
+          } else {
+            const imgElem = document.createElement('img');
+            imgElem.src = fileUrl;
+            imgElem.style.cssText = 'width: 100%; max-width: 240px; max-height: 300px; border-radius: 8px; display: block; object-fit: cover;';
+            bubble.appendChild(imgElem);
+          }
+
           const now = new Date();
           const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const timeDiv = document.createElement('div');
+          timeDiv.style.cssText = 'font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 4px; margin-right: 2px;';
+          timeDiv.innerText = ${timeStr} 已讀;
 
-          const msgGroup = document.createElement('div');
-          msgGroup.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; margin: 15px 10px; position: relative;';
+          msgGroup.appendChild(bubble);
+          msgGroup.appendChild(timeDiv);
 
-          msgGroup.innerHTML = `
-            <div style="display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; max-width: 85%;">
-              <div style="background: #cce7c1; padding: 6px; border-radius: 12px; border-top-right-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">
-                <video src="${videoUrl}" controls playsinline style="max-width: 220px; max-height: 250px; border-radius: 8px; display: block; object-fit: cover;"></video>
-              </div>
-            </div>
-            <div style="font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 4px; margin-right: 2px;">${timeStr} 已讀</div>
-          `;
-          
           chatContainer.appendChild(msgGroup);
           
           // 自動滾動到底部
@@ -2306,7 +2329,7 @@
             window.scrollTo(0, document.body.scrollHeight);
           }, 100);
 
-          // 清空 input 讓下次可重複選擇
+          // 清空 input 供下一次選擇
           videoInput.value = '';
         }
       });
