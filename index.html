@@ -2246,7 +2246,7 @@
     <script src="js/onboarding.js"></script> 
     <script src="js/listeners.js"></script>
     <script src="js/app.js"></script>
-<!-- 相簿影片/圖片發送至聊天框腳本 (iOS MOV 格式完全相容版) -->
+<!-- 相簿影片發送至聊天框腳本 (完全相容 iOS 安定版) -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const videoInput = document.getElementById('videoFileInput');
@@ -2259,19 +2259,19 @@
           const fileUrl = URL.createObjectURL(file);
           const isImage = file.type.startsWith('image/');
 
-          // 1. 強制關閉所有可能開啟的 Modal 彈窗/遮罩
-          const modals = document.querySelectorAll('.modal, [id*="modal"], [class*="modal"]');
-          modals.forEach(m => {
-            if (m.style.display !== 'none') {
-              if (typeof hideModal === 'function') {
-                try { hideModal(m); } catch(err) { m.style.display = 'none'; }
-              } else {
-                m.style.display = 'none';
-              }
-            }
-          });
+          // 1. 強制關閉所有選單與遮罩 (點擊背景或設置隱藏)
+          const advancedModal = document.getElementById('advanced-modal');
+          const settingsModal = document.getElementById('settings-modal');
+          if (advancedModal) advancedModal.style.display = 'none';
+          if (settingsModal) settingsModal.style.display = 'none';
+          
+          // 如果專案中有全域 hideModal 函式則調用
+          if (typeof hideModal === 'function') {
+            if (advancedModal) hideModal(advancedModal);
+            if (settingsModal) hideModal(settingsModal);
+          }
 
-          // 2. 精準尋找聊天內容主容器
+          // 2. 尋找聊天視窗容器
           let chatContainer = document.querySelector('.chat-content') || 
                                 document.querySelector('.chat-body') || 
                                 document.querySelector('.message-container') ||
@@ -2288,10 +2288,17 @@
             }
           }
 
-          // 3. 建立訊息外層氣泡
+          // 3. 安全計算時間 (防止 iOS 語言設定報錯)
+          const now = new Date();
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+          const seconds = String(now.getSeconds()).padStart(2, '0');
+          const timeStr = ${hours}:${minutes}:${seconds};
+
+          // 4. 建立訊息元素
           const msgGroup = document.createElement('div');
           msgGroup.className = 'message user-message';
-          msgGroup.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; margin: 15px 10px; relative; width: calc(100% - 20px); z-index: 100;';
+          msgGroup.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; margin: 15px 10px; position: relative; width: calc(100% - 20px); z-index: 100;';
 
           const bubble = document.createElement('div');
           bubble.style.cssText = 'background: #cce7c1; padding: 6px; border-radius: 12px; border-top-right-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); max-width: 80%; overflow: hidden;';
@@ -2302,7 +2309,6 @@
             imgElem.style.cssText = 'width: 100%; max-width: 220px; max-height: 280px; border-radius: 8px; display: block; object-fit: cover;';
             bubble.appendChild(imgElem);
           } else {
-            // 針對 iOS 螢幕錄影 (MOV/MP4) 最佳化渲染
             const videoElem = document.createElement('video');
             videoElem.controls = true;
             videoElem.preload = 'metadata';
@@ -2310,21 +2316,10 @@
             videoElem.setAttribute('playsinline', 'true');
             videoElem.setAttribute('webkit-playsinline', 'true');
             videoElem.style.cssText = 'width: 100%; max-width: 220px; max-height: 280px; border-radius: 8px; display: block; background: #000;';
-
-            // iOS 必須直接賦值 src，不能只靠 <source> 標籤
             videoElem.src = fileUrl;
-            
-            // 建立備用 source
-            const sourceElem = document.createElement('source');
-            sourceElem.src = fileUrl;
-            sourceElem.type = file.type || 'video/mp4';
-            videoElem.appendChild(sourceElem);
-
             bubble.appendChild(videoElem);
           }
 
-          const now = new Date();
-          const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
           const timeDiv = document.createElement('div');
           timeDiv.style.cssText = 'font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 4px; margin-right: 2px;';
           timeDiv.innerText = ${timeStr} 已讀;
@@ -2334,14 +2329,14 @@
 
           chatContainer.appendChild(msgGroup);
 
-          // 4. 強制捲動到底部
+          // 5. 自動滾動到底部
           setTimeout(() => {
             chatContainer.scrollTop = chatContainer.scrollHeight;
             window.scrollTo(0, document.body.scrollHeight);
-          }, 150);
+          }, 100);
 
         } catch (err) {
-          alert('影片渲染失敗，錯誤訊息：' + err.message);
+          alert('發送失敗：' + err.message);
         } finally {
           videoInput.value = '';
         }
