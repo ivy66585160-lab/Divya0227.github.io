@@ -2261,10 +2261,27 @@ function initReplyLibraryListeners() {
     const importInput = document.getElementById('import-replies-input');
     if (importInput && !importInput._bound) {
         importInput._bound = true;
-        importInput.addEventListener('change', e => {
-            const file = e.target.files[0];
-            if (!file) return;
-            e.target.value = '';
+importInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 1. 如果上傳的是圖片檔案 (PNG / JPG / WEBP 等)
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const base64Url = ev.target.result;
+                // 自動新增到 customEmojis 清單
+                if (typeof customEmojis !== 'undefined') {
+                    customEmojis.push(base64Url);
+                    if (typeof throttledSaveData === 'function') throttledSaveData();
+                    if (typeof renderReplyLibrary === 'function') renderReplyLibrary();
+                    showNotification('✓ 圖片表情已添加', 'success');
+                }
+            };
+            reader.readAsDataURL(file);
+        } 
+        // 2. 如果上傳的是原本的 JSON 設定檔
+        else {
             if (file.size > 50 * 1024 * 1024) { showNotification('文件过大', 'error'); return; }
             const reader = new FileReader();
             reader.onload = ev => {
@@ -2280,7 +2297,10 @@ function initReplyLibraryListeners() {
             };
             reader.onerror = () => showNotification('文件读取失败', 'error');
             reader.readAsText(file, 'UTF-8');
-        });
+        }
+
+        e.target.value = '';
+    });
     }
 
     const addBtn = document.getElementById('add-custom-reply');
