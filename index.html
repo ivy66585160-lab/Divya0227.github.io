@@ -1882,7 +1882,7 @@
         </div>
     </div>
 
-    <input type="file" id="import-replies-input" accept=".json" style="display: none;">
+    <input type="file" id="import-replies-input" accept="image/*, .json" style="display: none;">
     <input type="file" id="background-input" class="file-input" accept="image/*">
     <input type="file" id="import-input" class="file-input" accept=".json">
     <input type="file" id="sticker-file-input" class="file-input" accept="image/*" multiple>
@@ -2252,100 +2252,5 @@
     <script src="js/listeners.js"></script>
     <script src="js/app.js"></script>
 <script>
-(function hackImageModalForVideo() {
-  function setupModalHack() {
-    // 1. 抓取「发送图片」彈窗內的檔案輸入框
-    // 監聽全局 click，當使用者開啟「发送图片」彈窗時動態鎖定
-    document.body.addEventListener('click', function(e) {
-      setTimeout(() => {
-        // 搜尋彈窗內的 file input
-        const fileInputs = document.querySelectorAll('input[type="file"]');
-        fileInputs.forEach(input => {
-          // 強制解除圖片限制，允許影片 (image/*,video/*)
-          if (input.getAttribute('accept') !== 'image/*,video/*') {
-            input.setAttribute('accept', 'image/*,video/*');
-          }
-        });
-      }, 300);
-    }, true);
-
-    // 2. 監聽聊天室新增的訊息氣泡，如果是影片就替換為 <video> 播放器
-    const chatContainer = document.querySelector('.chat-content') || 
-                          document.querySelector('.chat-body') || 
-                          document.querySelector('#chatHistory') || 
-                          document.body;
-
-    if (chatContainer) {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1) { // Element node
-              // 檢查訊息內是否有 <img> 標籤傳的是影片檔，或是需要轉為影片的元素
-              const imgs = node.querySelectorAll ? node.querySelectorAll('img') : [];
-              imgs.forEach(img => {
-                const src = img.src || '';
-                // 判斷是否為影片副檔名或 blob 影片
-                if (/\.(mp4|mov|webm|m4v)$/i.test(src) || img.dataset.isVideo === 'true') {
-                  replaceImgWithVideo(img, src);
-                }
-              });
-            }
-          });
-        });
-      });
-
-      observer.observe(chatContainer, { childList: true, subtree: true });
-    }
-
-    // 將原本顯示失敗的 img 替換成可播放的 video 標籤
-    function replaceImgWithVideo(imgElem, videoSrc) {
-      const video = document.createElement('video');
-      video.src = videoSrc;
-      video.controls = true;
-      video.setAttribute('playsinline', 'true');
-      video.setAttribute('webkit-playsinline', 'true');
-      video.style.cssText = imgElem.style.cssText || 'width: 100%; max-width: 240px; border-radius: 8px; display: block;';
-      if (!video.style.maxWidth) video.style.maxWidth = '240px';
-
-      imgElem.parentNode.replaceChild(video, imgElem);
-    }
-
-    // 3. 劫持「相簿視頻」按鈕，讓它直接觸發「发送图片」功能
-    document.body.addEventListener('click', function(e) {
-      const target = e.target.closest('*');
-      if (!target) return;
-      const text = (target.innerText || target.textContent || '').trim();
-
-      if (text.includes('相簿視頻') || text.includes('相册视频')) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // 找到「发送图片」按鈕並點擊它
-        const sendImgBtn = Array.from(document.querySelectorAll('*')).find(el => {
-          const t = (el.innerText || el.textContent || '').trim();
-          return t === '发送图片' || t === '發送圖片';
-        });
-
-        if (sendImgBtn) {
-          sendImgBtn.click();
-        } else {
-          // 若找不到按鈕，嘗試觸發第一個 input file
-          const firstInput = document.querySelector('input[type="file"]');
-          if (firstInput) {
-            firstInput.setAttribute('accept', 'image/*,video/*');
-            firstInput.click();
-          }
-        }
-      }
-    }, true);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupModalHack);
-  } else {
-    setupModalHack();
-  }
-})();
-</script>
 </body>
 </html>
