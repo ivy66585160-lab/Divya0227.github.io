@@ -194,7 +194,7 @@
 
     function _createAudio() {
         if (_audio) return _audio;
-        _audio = new Audio(music);
+        _audio = new Audio(XYZ);
         _audio.loop   = true;
         _audio.volume = 0.01;
         _audio.preload = 'auto';
