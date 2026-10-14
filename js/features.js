@@ -186,7 +186,7 @@
 
 (function() {
     var KEY = 'keepaliveAudioEnabled';
-    var SRC = 'https://img.heliar.top/file/1772885159972_silence.m4a';
+    var SRC = 'https://raw.githubusercontent.com/anars/blank-audio/master/1-minute-of-silence.mp3';
     var _audio = null;
     var _unlockBound = false;
 
