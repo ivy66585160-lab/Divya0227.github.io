@@ -186,7 +186,7 @@
 
 (function() {
     var KEY = 'keepaliveAudioEnabled';
-    var SRC = 'https://img.heliar.top/file/1772885159972_silence.m4a';
+    var SRC = 'https://raw.githubusercontent.com/anars/blank-audio/master/1-minute-of-silence.mp3';
     var _audio = null;
     var _unlockBound = false;
 
@@ -194,7 +194,7 @@
 
     function _createAudio() {
         if (_audio) return _audio;
-        _audio = new Audio(XYZ);
+        _audio = new Audio(SRC);
         _audio.loop   = true;
         _audio.volume = 0.01;
         _audio.preload = 'auto';
@@ -1612,4 +1612,7 @@ window.tryShowDailyGreeting = function() {
         if (modal) modal.classList.remove('hidden');
     } catch(e) { console.warn('Daily greeting show error:', e); }
 };
-
+// --- 心跳機制測試版 ---
+setInterval(function() {
+    console.log('【測試】心跳計時器正常觸發中（每30秒）');
+}, 30000);
