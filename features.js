@@ -1,7 +1,43 @@
-// --- 心跳機制測試版 ---
-setInterval(function() {
-    console.log('【測試】心跳計時器正常觸發中（每30秒）');
-}, 30000);
+// --- 完整版：Ping/Pong 心跳機制與背景保持活躍 ---
+(function() {
+    const PINGTIME = 30000; // 每 30 秒執行一次
+    let heartbeatTimer = null;
+
+    // 1. Ping/Pong 心跳機制
+    function startHeartbeat() {
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        
+        heartbeatTimer = setInterval(() => {
+            console.log('【心跳】發送 Ping 到伺服器保持連線...');
+        }, PINGTIME);
+    }
+
+    // 2. 行動裝置背景保持活躍（Wake Lock API）
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                const wakeLock = await navigator.wakeLock.request('screen');
+                console.log('【電源】螢幕喚醒鎖定（Wake Lock）已啟用');
+            } catch (err) {
+                console.warn(`【電源】喚醒鎖定失敗: ${err.name}, ${err.message}`);
+            }
+        }
+    }
+
+    // 當頁面載入完成後啟動
+    window.addEventListener('load', () => {
+        startHeartbeat();
+        requestWakeLock();
+    });
+
+    // 頁面重新獲得焦點時重新取得鎖定
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            startHeartbeat();
+            requestWakeLock();
+        }
+    });
+})();
 (function() {
     var MY_SYM_KEY   = 'pokeSym_my';
     var PTR_SYM_KEY  = 'pokeSym_partner';
