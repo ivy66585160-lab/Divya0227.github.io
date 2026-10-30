@@ -1612,4 +1612,16 @@ window.tryShowDailyGreeting = function() {
         if (modal) modal.classList.remove('hidden');
     } catch(e) { console.warn('Daily greeting show error:', e); }
 };
+// --- 自動維持連線與心跳機制 ---
+(function() {
+    const HEARTBEAT_INTERVAL = 30000; // 每 30 秒執行一次（單位：毫秒）
 
+    setInterval(function() {
+        // 這裡可以放你想定時觸發來保持連線活躍的動作
+        // 例如：若專案有全域的 WebSocket 或連線物件，可在此發送 ping
+        if (typeof window.ws !== 'undefined' && window.ws.readyState === WebSocket.OPEN) {
+            window.ws.send(JSON.stringify({ type: 'ping' }));
+            console.log('已自動發送心跳保持連線');
+        }
+    }, HEARTBEAT_INTERVAL);
+})();
