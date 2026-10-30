@@ -1,42 +1,76 @@
-// --- 完整版：Ping/Pong 心跳機制與背景保持活躍 ---
+// --- Clean Audio Keep-Alive & Heartbeat Version ---
 (function() {
-    const PINGTIME = 30000; // 每 30 秒執行一次
+    const PINGTIME = 30000;
     let heartbeatTimer = null;
+    let audioCtx = null;
 
-    // 1. Ping/Pong 心跳機制
     function startHeartbeat() {
         if (heartbeatTimer) clearInterval(heartbeatTimer);
-        
         heartbeatTimer = setInterval(() => {
-            console.log('【心跳】發送 Ping 到伺服器保持連線...');
+            console.log('Heartbeat: Sending ping to server...');
         }, PINGTIME);
     }
 
-    // 2. 行動裝置背景保持活躍（Wake Lock API）
     async function requestWakeLock() {
         if ('wakeLock' in navigator) {
             try {
-                const wakeLock = await navigator.wakeLock.request('screen');
-                console.log('【電源】螢幕喚醒鎖定（Wake Lock）已啟用');
+                await navigator.wakeLock.request('screen');
+                console.log('Power: Screen wake lock enabled');
             } catch (err) {
-                console.warn(`【電源】喚醒鎖定失敗: ${err.name}, ${err.message}`);
+                console.warn('Power: Wake lock failed', err);
             }
         }
     }
 
-    // 當頁面載入完成後啟動
+    // 使用 Web Audio API 動態產生微弱聲音來保活，完全不會有亂碼
+    function initAudioKeepAlive() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            // 建立一個極低音量的連續振盪器（幾近無聲）
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 200; // 頻率
+            gainNode.gain.value = 0.0001;     // 極低音量，幾乎聽不見
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            console.log('Audio: Web Audio keep-alive started');
+        } catch (err) {
+            console.warn('Audio: Keep-alive failed', err);
+        }
+    }
+
     window.addEventListener('load', () => {
         startHeartbeat();
         requestWakeLock();
+        initAudioKeepAlive();
     });
 
-    // 頁面重新獲得焦點時重新取得鎖定
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
             startHeartbeat();
             requestWakeLock();
+            initAudioKeepAlive();
         }
     });
+
+    document.addEventListener('click', () => {
+        initAudioKeepAlive();
+    }, { once: true });
 })();
 (function() {
     var MY_SYM_KEY   = 'pokeSym_my';
