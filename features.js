@@ -1,3 +1,7 @@
+// --- 心跳機制測試版 ---
+setInterval(function() {
+    console.log('【測試】心跳計時器正常觸發中（每30秒）');
+}, 30000);
 (function() {
     var MY_SYM_KEY   = 'pokeSym_my';
     var PTR_SYM_KEY  = 'pokeSym_partner';
@@ -1612,7 +1616,3 @@ window.tryShowDailyGreeting = function() {
         if (modal) modal.classList.remove('hidden');
     } catch(e) { console.warn('Daily greeting show error:', e); }
 };
-// --- 心跳機制測試版 ---
-setInterval(function() {
-    console.log('【測試】心跳計時器正常觸發中（每30秒）');
-}, 30000);
