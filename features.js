@@ -7,7 +7,7 @@
     function startHeartbeat() {
         if (heartbeatTimer) clearInterval(heartbeatTimer);
         heartbeatTimer = setInterval(() => {
-            console.log('Heartbeat: Sending ping to server...');
+            console.log('【測試】心跳計時器正常觸發中 (每30秒)');
         }, PINGTIME);
     }
 
@@ -15,14 +15,13 @@
         if ('wakeLock' in navigator) {
             try {
                 await navigator.wakeLock.request('screen');
-                console.log('Power: Screen wake lock enabled');
+                console.log('【電源】螢幕喚醒鎖定（Wake Lock）已啟用');
             } catch (err) {
-                console.warn('Power: Wake lock failed', err);
+                console.warn('【電源】喚醒鎖定失敗', err);
             }
         }
     }
 
-    // 使用 Web Audio API 動態產生微弱聲音來保活，完全不會有亂碼
     function initAudioKeepAlive() {
         try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -36,21 +35,20 @@
                 audioCtx.resume();
             }
 
-            // 建立一個極低音量的連續振盪器（幾近無聲）
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             
             oscillator.type = 'sine';
-            oscillator.frequency.value = 200; // 頻率
-            gainNode.gain.value = 0.0001;     // 極低音量，幾乎聽不見
+            oscillator.frequency.value = 200;
+            gainNode.gain.value = 0.0001;
             
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             
             oscillator.start();
-            console.log('Audio: Web Audio keep-alive started');
+            console.log('【音訊】Web Audio 背景保活已啟動');
         } catch (err) {
-            console.warn('Audio: Keep-alive failed', err);
+            console.warn('【音訊】保活啟動失敗', err);
         }
     }
 
@@ -70,14 +68,9 @@
 
     document.addEventListener('click', () => {
         initAudioKeepAlive();
+        console.log('【音訊】使用者互動解鎖 Web Audio');
     }, { once: true });
 })();
-(function() {
-    var MY_SYM_KEY   = 'pokeSym_my';
-    var PTR_SYM_KEY  = 'pokeSym_partner';
-    var MY_CUST_KEY  = 'pokeSym_my_custom';
-    var PTR_CUST_KEY = 'pokeSym_partner_custom';
-
     var PRESETS = [
         { value: 'none',    label: '无装饰',   sym: '' },
         { value: 'star4',   label: '✦ 四角星', sym: '✦' },
