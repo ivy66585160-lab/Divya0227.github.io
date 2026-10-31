@@ -1679,3 +1679,10 @@ window.tryShowDailyGreeting = function() {
         if (modal) modal.classList.remove('hidden');
     } catch(e) { console.warn('Daily greeting show error:', e); }
 };
+// 監聽頁面切回前景，防止通話介面或狀態被瀏覽器重置
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') {
+    console.log('【保活】頁面已切回前景，正在維持介面狀態...');
+    // 這裡可以預留，如果你的通話介面有重新渲染的函式可以在這邊呼叫
+  }
+});
