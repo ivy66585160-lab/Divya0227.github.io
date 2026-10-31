@@ -20,14 +20,49 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="features.js"></script>
-<!-- 引入手機端懸浮主控台 vConsole -->
-<script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-<script>
-  // 初始化 vConsole
-  var vConsole = new VConsole();
-</script>
     <link rel="stylesheet" href="css/styles.css">
+<!-- 內嵌簡易手機日誌面板 -->
+<div id="custom-debug-log" style="position:fixed; bottom:60px; right:10px; width:280px; max-height:150px; background:rgba(0,0,0,0.85); color:#00ff00; font-size:11px; padding:8px; border-radius:8px; z-index:99999; overflow-y:auto; display:none; pointer-events:none;">
+  <div style="font-weight:bold; border-bottom:1px solid #555; margin-bottom:4px;">即時 Log 面板</div>
+  <div id="log-content"></div>
+</div>
+<button id="toggle-log-btn" style="position:fixed; bottom:15px; right:15px; background:#4CAF50; color:white; border:none; border-radius:50%; width:40px; height:40px; font-size:12px; z-index:100000; box-shadow:0 2px 5px rgba(0,0,0,0.3);">Log</button>
+<script>
+  (function() {
+    const logBox = document.getElementById('log-content');
+    const debugDiv = document.getElementById('custom-debug-log');
+    const btn = document.getElementById('toggle-log-btn');
+    
+    let isOpen = false;
+    btn.onclick = () => {
+      isOpen = !isOpen;
+      debugDiv.style.display = isOpen ? 'block' : 'none';
+      btn.style.background = isOpen ? '#f44336' : '#4CAF50';
+      btn.innerText = isOpen ? '關閉' : 'Log';
+    };
 
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    
+    function appendLog(type, args) {
+      const msg = Array.from(args).map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ');
+      const div = document.createElement('div');
+      div.style.color = type === 'warn' ? '#ffeb3b' : '#00ff00';
+      div.innerText = `[${type}] ${msg}`;
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    console.log = function() {
+      originalLog.apply(console, arguments);
+      appendLog('log', arguments);
+    };
+    console.warn = function() {
+      originalWarn.apply(console, arguments);
+      appendLog('warn', arguments);
+    };
+  })();
+</script>
     <style id="css-live-preview-style">
   #mediaPreview {
     width: 100%;
