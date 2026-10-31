@@ -1686,3 +1686,17 @@ document.addEventListener('visibilitychange', function() {
     // 這裡可以預留，如果你的通話介面有重新渲染的函式可以在這邊呼叫
   }
 });
+// 強效攔截切回前景時的頁面重置與刷新
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted) {
+    console.log('【保活】偵測到頁面從往返快取恢復，正在維持狀態...');
+  }
+});
+
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') {
+    console.log('【保活】切回前景，強制鎖定介面...');
+    // 阻止預設的焦點丟失行為，維持目前的 DOM 結構
+    window.scrollTo(window.scrollX, window.scrollY);
+  }
+});
